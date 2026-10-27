@@ -235,9 +235,17 @@ export interface ProductPage extends Omit<CatalogCard, "monthlyPaise" | "firstMo
 }
 
 export async function getProductPage(slug: string, pool: Pool = db()): Promise<ProductPage | null> {
+  // Slugs created from product names can contain commas or other characters that arrive percent-encoded,
+  // so match both the raw and the decoded form.
+  let decoded = slug;
+  try {
+    decoded = decodeURIComponent(slug);
+  } catch {
+    /* malformed escape: keep the raw value */
+  }
   const { rows } = await pool.query(
-    `SELECT p.*, cp.min_duration_months, cp.plans_count FROM products p JOIN catalog_products cp ON cp.id = p.id WHERE p.slug = $1 AND p.status = 'approved'`,
-    [slug],
+    `SELECT p.*, cp.min_duration_months, cp.plans_count FROM products p JOIN catalog_products cp ON cp.id = p.id WHERE p.slug = ANY($1::text[]) AND p.status = 'approved' LIMIT 1`,
+    [[...new Set([slug, decoded])]],
   );
   const p = rows[0];
   if (!p) return null;

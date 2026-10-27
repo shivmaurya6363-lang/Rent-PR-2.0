@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 /** Minimal public card data for a list of slugs (recently viewed, wishlist). */
 export const GET = handle("GET /api/products/summary", async (req: Request) => {
   if (!rateLimit(`psum:${clientIp(req)}`, 60, 60_000).ok) return json({ items: [] }, 429);
-  const slugs = (new URL(req.url).searchParams.get("slugs") ?? "").split(",").map((s) => s.trim()).filter((s) => /^[a-z0-9-]{1,120}$/i.test(s)).slice(0, 24);
+  // One `slug=` parameter per product: slugs made from product names can contain commas.
+  const slugs = new URL(req.url).searchParams.getAll("slug").map((s) => s.trim()).filter((s) => /^[^\s/\\?#]{1,200}$/.test(s)).slice(0, 24);
   const ids = (new URL(req.url).searchParams.get("ids") ?? "").split(",").filter((s) => /^[0-9a-f-]{36}$/i.test(s)).slice(0, 50);
   if (!slugs.length && !ids.length) return json({ items: [] });
   const { rows } = await db().query(

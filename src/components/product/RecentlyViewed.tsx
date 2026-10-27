@@ -21,7 +21,7 @@ export default function RecentlyViewed({ currentSlug }: { currentSlug?: string }
   const others = slugs.filter((s) => s !== currentSlug).slice(0, 6);
   useEffect(() => {
     if (!others.length) return setItems([]);
-    fetch(`/api/products/summary?slugs=${encodeURIComponent(others.join(","))}`)
+    fetch(`/api/products/summary?${others.map((s) => `slug=${encodeURIComponent(s)}`).join("&")}`)
       .then((r) => (r.ok ? r.json() : { items: [] }))
       .then((d) => setItems(d.items ?? []))
       .catch(() => setItems([]));
