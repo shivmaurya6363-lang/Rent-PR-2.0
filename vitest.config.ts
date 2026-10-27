@@ -9,6 +9,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // DB integration files share one database and some assert on global totals, so files run one at a time.
+    fileParallelism: false,
   },
   resolve: {
     alias: {

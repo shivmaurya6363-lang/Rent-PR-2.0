@@ -153,6 +153,18 @@ export class RazorpayProvider implements PaymentProvider {
     await rzp(`/subscriptions/${ref.subscriptionId}/cancel`, { body: { cancel_at_cycle_end: opts.atCycleEnd ? 1 : 0 } });
   }
 
+  async extendRecurringAgreement(ref: { subscriptionId: string }, addCycles: number) {
+    // Not exercised against a live account: confirm in Razorpay test mode that remaining_count can be raised for your plan.
+    const sub = await rzp<any>(`/subscriptions/${ref.subscriptionId}`);
+    if (!["active", "authenticated", "created"].includes(sub.status)) {
+      throw new Error(`Subscription is ${sub.status} and cannot be extended automatically`);
+    }
+    await rzp(`/subscriptions/${ref.subscriptionId}`, {
+      method: "PATCH",
+      body: { plan_id: sub.plan_id, remaining_count: Number(sub.remaining_count ?? 0) + addCycles, schedule_change_at: "now" },
+    });
+  }
+
   async pauseRecurringAgreement(ref: { subscriptionId: string }) {
     await rzp(`/subscriptions/${ref.subscriptionId}/pause`, { body: { pause_at: "now" } });
   }
