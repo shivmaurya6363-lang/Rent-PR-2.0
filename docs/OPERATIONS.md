@@ -51,7 +51,7 @@ Not done, or needing credentials or outside configuration:
 - **Rate limiting is per instance** (in memory); use a shared store for a global limit.
 - **No Content-Security-Policy** yet (see `ARCHITECTURE.md`).
 - **Legacy screens** (vendor dashboard, the older admin pages for single-product orders, auth, account profile) are client-rendered and still carry many `any` types; they work as before and were only re-routed.
-- **Product admin** does not yet expose the first-month discount as a form field: set `rental_plans.first_month_discount` directly or extend `VendorProductForm`.
+- **First-month discount** is set per product in the vendor product form (Pricing section) and validated against the 50% cap before saving; the same cap is enforced again at quote and checkout. Admin editing of a vendor's product goes through the same form.
 - **Wishlist and recently viewed** are stored on the device, not the account.
 - PhonePe cancellation, pause and refunds are manual; PhonePe takes one rental per checkout.
 - Mobile Safari and real devices were not tested; checks used Chromium at 320 to 1440 px.

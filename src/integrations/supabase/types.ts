@@ -901,6 +901,7 @@ export type Database = {
           created_at: string
           delivery_fee: number | null
           duration_months: number
+          first_month_discount: number
           id: string
           installation_fee: number | null
           is_active: boolean
@@ -914,6 +915,7 @@ export type Database = {
           created_at?: string
           delivery_fee?: number | null
           duration_months: number
+          first_month_discount?: number
           id?: string
           installation_fee?: number | null
           is_active?: boolean
@@ -927,6 +929,7 @@ export type Database = {
           created_at?: string
           delivery_fee?: number | null
           duration_months?: number
+          first_month_discount?: number
           id?: string
           installation_fee?: number | null
           is_active?: boolean

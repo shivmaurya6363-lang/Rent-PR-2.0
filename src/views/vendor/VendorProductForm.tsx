@@ -99,6 +99,8 @@ const VendorProductForm = () => {
     installationFee: 0,
     maxDuration: 12,
     discountPerMonth: 2,
+    // Rupees off the FIRST month only; the regular monthly rent applies from month 2.
+    firstMonthDiscount: 0,
   });
 
   const [specKey, setSpecKey] = useState('');
@@ -252,6 +254,7 @@ const VendorProductForm = () => {
             ...prev,
             deliveryFee: firstPlan.delivery_fee || 500,
             installationFee: firstPlan.installation_fee || 0,
+            firstMonthDiscount: Number(firstPlan.first_month_discount) || 0,
           }));
         } else {
           setPricingMode('auto');
@@ -262,6 +265,7 @@ const VendorProductForm = () => {
             ...prev,
             deliveryFee: firstPlan.delivery_fee || 500,
             installationFee: firstPlan.installation_fee || 0,
+            firstMonthDiscount: Number(firstPlan.first_month_discount) || 0,
           }));
         }
 
@@ -317,6 +321,7 @@ const VendorProductForm = () => {
         security_deposit: price,
         delivery_fee: pricing.deliveryFee,
         installation_fee: pricing.installationFee,
+        first_month_discount: pricing.firstMonthDiscount || 0,
       }));
     }
 
@@ -329,7 +334,16 @@ const VendorProductForm = () => {
       security_deposit: monthlyRent,
       delivery_fee: pricing.deliveryFee,
       installation_fee: installationFee,
+      first_month_discount: pricing.firstMonthDiscount || 0,
     }));
+  };
+
+  // The storefront rejects a first-month discount above half of the monthly rent, so stop it at the source.
+  const assertDiscountAllowed = (plans: { monthly_rent: number; first_month_discount?: number }[]) => {
+    const bad = plans.find((p) => (p.first_month_discount ?? 0) > Math.floor(p.monthly_rent * 0.5));
+    if (bad) {
+      throw new Error(`The first-month discount (₹${bad.first_month_discount}) cannot be more than 50% of the lowest monthly rent (₹${Math.floor(bad.monthly_rent * 0.5)} on a ₹${bad.monthly_rent} plan).`);
+    }
   };
 
   const createProductMutation = useMutation({
@@ -369,6 +383,7 @@ const VendorProductForm = () => {
       if (productError) throw productError;
 
       const plans = generateRentalPlans(product.id);
+      assertDiscountAllowed(plans);
       const { error: plansError } = await supabase.from('rental_plans').insert(plans);
       if (plansError) throw plansError;
 
@@ -459,6 +474,7 @@ const VendorProductForm = () => {
       if (deactivateError) throw deactivateError;
 
       const plans = generateRentalPlans(productId);
+      assertDiscountAllowed(plans);
       const { error: plansError } = await supabase.from('rental_plans').insert(plans);
       if (plansError) throw plansError;
 
@@ -1021,6 +1037,19 @@ const VendorProductForm = () => {
                         placeholder="500"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>First-month discount (₹)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={pricing.firstMonthDiscount || ''}
+                        onChange={(e) => setPricing({ ...pricing, firstMonthDiscount: Number(e.target.value) })}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Taken off the first month only. From month 2 the regular monthly rent is charged. At most 50% of the monthly rent.
+                      </p>
+                    </div>
                   </div>
 
                   {/* Auto Slab Pricing Preview */}
@@ -1145,6 +1174,19 @@ const VendorProductForm = () => {
                         onChange={(e) => setPricing({ ...pricing, deliveryFee: Number(e.target.value) })}
                         placeholder="500"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>First-month discount (₹)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={pricing.firstMonthDiscount || ''}
+                        onChange={(e) => setPricing({ ...pricing, firstMonthDiscount: Number(e.target.value) })}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Taken off the first month only. From month 2 the regular monthly rent is charged. At most 50% of the monthly rent.
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label>Installation Fee (₹)</Label>
