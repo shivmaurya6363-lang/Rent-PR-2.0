@@ -33,9 +33,9 @@ d("catalog read model", () => {
     const u = randomUUID();
     await q(`INSERT INTO auth.users (id,email) VALUES ($1,$2)`, [u, `${u}@example.com`]);
     vendorId = (await q(`INSERT INTO vendors (user_id,business_name,business_email) VALUES ($1,'V','v@example.com') RETURNING id`, [u])).rows[0].id;
-    parentCat = (await q(`INSERT INTO categories (name,slug) VALUES ('Appliances',$1) RETURNING id`, [`appl-${tag}`])).rows[0].id;
-    childCat = (await q(`INSERT INTO categories (name,slug,parent_id) VALUES ('Washing Machines',$1,$2) RETURNING id`, [`wash-${tag}`, parentCat])).rows[0].id;
-    otherCat = (await q(`INSERT INTO categories (name,slug) VALUES ('Furniture',$1) RETURNING id`, [`furn-${tag}`])).rows[0].id;
+    parentCat = (await q(`INSERT INTO categories (name,slug) VALUES ('Appliances ' || $1,$1) RETURNING id`, [`appl-${tag}`])).rows[0].id;
+    childCat = (await q(`INSERT INTO categories (name,slug,parent_id) VALUES ('Washing Machines ' || $1,$1,$2) RETURNING id`, [`wash-${tag}`, parentCat])).rows[0].id;
+    otherCat = (await q(`INSERT INTO categories (name,slug) VALUES ('Furniture ' || $1,$1) RETURNING id`, [`furn-${tag}`])).rows[0].id;
     locA = (await q(`INSERT INTO locations (name,slug) VALUES ('Bengaluru',$1) RETURNING id`, [`a-${tag}`])).rows[0].id;
     locB = (await q(`INSERT INTO locations (name,slug) VALUES ('Mumbai',$1) RETURNING id`, [`b-${tag}`])).rows[0].id;
 
@@ -61,12 +61,12 @@ d("catalog read model", () => {
   });
 
   it("a parent category includes products from its subcategories", async () => {
-    const tree: CategoryNode[] = [{ id: parentCat, name: "Appliances", slug: `appl-${tag}`, description: null, imageUrl: null, parentId: null, children: [{ id: childCat, name: "Washing Machines", slug: `wash-${tag}`, description: null, imageUrl: null, parentId: parentCat, children: [] }] }];
+    const tree: CategoryNode[] = [{ id: parentCat, name: `Appliances`, slug: `appl-${tag}`, description: null, imageUrl: null, parentId: null, children: [{ id: childCat, name: "Washing Machines", slug: `wash-${tag}`, description: null, imageUrl: null, parentId: parentCat, children: [] }] }];
     const s = categoryScope(tree, `appl-${tag}`)!;
     expect(s.ids.sort()).toEqual([parentCat, childCat].sort());
     expect(names(await listCatalog({ categoryIds: s.ids }, pool))).toEqual(["LG Washer", "Samsung Washer", "Whirlpool Fridge"]);
     const sub = categoryScope(tree, `wash-${tag}`)!;
-    expect(sub.trail.map((c) => c.name)).toEqual(["Appliances", "Washing Machines"]);
+    expect(sub.trail.map((c) => c.slug)).toEqual([`appl-${tag}`, `wash-${tag}`]);
     expect(names(await listCatalog({ categoryIds: sub.ids }, pool))).toEqual(["LG Washer", "Samsung Washer"]);
     expect(categoryScope(tree, "missing")).toBeNull();
   });
@@ -138,7 +138,7 @@ d("catalog read model", () => {
     const s = await suggest(`washer`, pool);
     expect(s.some((x) => x.type === "product" && x.label === "Samsung Washer")).toBe(true);
     expect((await suggest("w", pool))).toEqual([]);
-    expect((await suggest("Washing", pool)).some((x) => x.type === "category")).toBe(true);
+    expect((await suggest(`Washing Machines ${`wash-${tag}`}`, pool)).some((x) => x.type === "category")).toBe(true);
   });
 
   it("product page: plans in duration order, hides unapproved products", async () => {
