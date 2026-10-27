@@ -4,114 +4,109 @@
 
 /* RentPR Design System - Modern Rental E-commerce */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @layer base {
+  /*
+   * RentPR design system
+   * Brand green is taken from the logo (#153A27). Surfaces are warm ivory rather than
+   * cool grey, text is a green-tinted ink, and amber is reserved for first-month offers
+   * so a promotional price never looks like the regular monthly price.
+   */
   :root {
-    /* Core Brand Colors - Teal & Orange */
-    --background: 0 0% 98%;
-    --foreground: 220 20% 15%;
+    --background: 42 38% 97%;          /* ivory */
+    --foreground: 150 30% 9%;          /* ink */
+    --surface: 42 30% 94%;             /* recessed panels */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 15%;
-
+    --card-foreground: 150 30% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 15%;
+    --popover-foreground: 150 30% 9%;
 
-    /* Primary - Deep Teal */
-    --primary: 168 78% 26%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 148 49% 17%;            /* logo green */
+    --primary-foreground: 42 45% 97%;
+    --secondary: 146 22% 92%;          /* sage */
+    --secondary-foreground: 148 49% 17%;
 
-    /* Secondary - Light Teal */
-    --secondary: 168 45% 95%;
-    --secondary-foreground: 168 78% 26%;
+    --muted: 42 18% 92%;
+    --muted-foreground: 150 9% 36%;    /* 5.6:1 on ivory */
 
-    /* Muted */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 10% 45%;
-
-    /* Accent - Warm Coral/Orange */
-    --accent: 24 95% 53%;
+    --accent: 28 88% 42%;              /* amber (5.1:1 with white) */
     --accent-foreground: 0 0% 100%;
 
-    /* Success - For trust badges */
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
+    --offer: 38 100% 92%;              /* first-month offer chip */
+    --offer-foreground: 26 80% 22%;
+    --offer-border: 36 85% 78%;
 
-    /* Destructive */
-    --destructive: 0 84% 60%;
+    --success: 152 62% 28%;
+    --success-foreground: 0 0% 100%;
+    --success-soft: 150 40% 93%;
+
+    --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    /* UI Elements */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 168 78% 26%;
+    --border: 42 14% 86%;
+    --input: 42 14% 82%;
+    --ring: 148 49% 17%;
 
-    --radius: 0.75rem;
+    --radius: 0.625rem;
 
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(168, 78%, 26%) 0%, hsl(168, 65%, 35%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(30, 100%, 60%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(168, 45%, 97%) 0%, hsl(0, 0%, 100%) 100%);
-    
-    --shadow-sm: 0 1px 2px 0 hsl(220 20% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 20% 15% / 0.08), 0 2px 4px -2px hsl(220 20% 15% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(220 20% 15% / 0.08), 0 4px 6px -4px hsl(220 20% 15% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(220 20% 15% / 0.1), 0 8px 10px -6px hsl(220 20% 15% / 0.1);
-    --shadow-card: 0 1px 3px 0 hsl(220 20% 15% / 0.06), 0 1px 2px -1px hsl(220 20% 15% / 0.06);
-    --shadow-card-hover: 0 10px 40px -10px hsl(168 78% 26% / 0.15);
+    /* Flat on purpose: the previous gradients are kept as names so legacy screens still render. */
+    --gradient-primary: linear-gradient(0deg, hsl(148 49% 17%), hsl(148 49% 17%));
+    --gradient-accent: linear-gradient(0deg, hsl(28 88% 42%), hsl(28 88% 42%));
+    --gradient-hero: linear-gradient(180deg, hsl(42 38% 97%) 0%, hsl(42 38% 97%) 100%);
 
-    /* Sidebar - keep existing */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 168 78% 26%;
+    --shadow-sm: 0 1px 2px 0 hsl(150 30% 9% / 0.05);
+    --shadow-md: 0 2px 8px -2px hsl(150 30% 9% / 0.08);
+    --shadow-lg: 0 8px 24px -8px hsl(150 30% 9% / 0.12);
+    --shadow-xl: 0 16px 40px -12px hsl(150 30% 9% / 0.16);
+    --shadow-card: 0 1px 2px 0 hsl(150 30% 9% / 0.05), 0 0 0 1px hsl(42 14% 86% / 0.6);
+    --shadow-card-hover: 0 10px 28px -12px hsl(148 49% 17% / 0.25), 0 0 0 1px hsl(148 30% 70% / 0.6);
+
+    --sidebar-background: 42 38% 97%;
+    --sidebar-foreground: 150 20% 20%;
+    --sidebar-primary: 148 49% 17%;
+    --sidebar-primary-foreground: 42 45% 97%;
+    --sidebar-accent: 146 22% 92%;
+    --sidebar-accent-foreground: 148 49% 17%;
+    --sidebar-border: 42 14% 86%;
+    --sidebar-ring: 148 49% 17%;
   }
 
   .dark {
-    --background: 220 20% 10%;
-    --foreground: 0 0% 98%;
-
-    --card: 220 20% 13%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 220 20% 13%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 168 65% 45%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 168 65% 45%;
-
-    --muted: 220 20% 18%;
-    --muted-foreground: 220 10% 60%;
-
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 100%;
-
-    --success: 142 70% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --destructive: 0 62% 50%;
+    --background: 150 22% 7%;
+    --foreground: 42 25% 95%;
+    --surface: 150 18% 11%;
+    --card: 150 20% 10%;
+    --card-foreground: 42 25% 95%;
+    --popover: 150 20% 10%;
+    --popover-foreground: 42 25% 95%;
+    --primary: 146 45% 62%;
+    --primary-foreground: 150 30% 8%;
+    --secondary: 150 16% 16%;
+    --secondary-foreground: 146 45% 72%;
+    --muted: 150 14% 15%;
+    --muted-foreground: 42 10% 66%;
+    --accent: 32 90% 56%;
+    --accent-foreground: 150 30% 8%;
+    --offer: 30 50% 16%;
+    --offer-foreground: 38 95% 80%;
+    --offer-border: 32 50% 30%;
+    --success: 146 55% 52%;
+    --success-foreground: 150 30% 8%;
+    --success-soft: 150 25% 15%;
+    --destructive: 0 65% 55%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 168 65% 45%;
-
-    --sidebar-background: 220 20% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 168 65% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 18%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 168 65% 45%;
+    --border: 150 12% 20%;
+    --input: 150 12% 24%;
+    --ring: 146 45% 62%;
+    --sidebar-background: 150 22% 7%;
+    --sidebar-foreground: 42 20% 90%;
+    --sidebar-primary: 146 45% 62%;
+    --sidebar-primary-foreground: 150 30% 8%;
+    --sidebar-accent: 150 16% 16%;
+    --sidebar-accent-foreground: 42 20% 90%;
+    --sidebar-border: 150 12% 20%;
+    --sidebar-ring: 146 45% 62%;
   }
 }
 
@@ -122,6 +117,18 @@
 
   html {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 
   body {
@@ -130,6 +137,19 @@
 }
 
 @layer components {
+  /* ---- RentPR rental design primitives ---- */
+  .container-page { @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.14em] text-primary/80; }
+  .t-display { @apply font-display font-semibold tracking-tight text-foreground; }
+  .t-price { @apply font-semibold tabular-nums tracking-tight; font-feature-settings: "tnum" 1; }
+  .chip { @apply inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-0.5 text-xs font-medium text-foreground/80; }
+  .chip-offer { @apply inline-flex items-center gap-1 rounded-md border border-offer-border bg-offer px-2 py-0.5 text-xs font-semibold text-offer-foreground; }
+  .chip-success { @apply inline-flex items-center gap-1 rounded-md bg-success-soft px-2 py-0.5 text-xs font-semibold text-success; }
+  .panel { @apply rounded-xl border border-border bg-card; }
+  .panel-quiet { @apply rounded-xl bg-surface; }
+  .skeleton { @apply animate-pulse rounded-md bg-muted; }
+  .touch-target { @apply min-h-[44px] min-w-[44px]; }
+
   /* Product Card Styles */
   .product-card {
     @apply bg-card rounded-xl overflow-hidden transition-all duration-300;

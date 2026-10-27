@@ -67,6 +67,18 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Read-only availability across a requested rental period (no locks, no holds).
+CREATE OR REPLACE FUNCTION public.inventory_available(p_product_id uuid, p_qty integer, p_start date, p_end date) RETURNS boolean
+LANGUAGE sql STABLE AS $$
+  SELECT count(*) >= p_qty FROM public.inventory_units u
+   WHERE u.product_id = p_product_id
+     AND u.status IN ('available','reserved','rented','pickup_pending')
+     AND NOT EXISTS (
+       SELECT 1 FROM public.inventory_reservations r
+        WHERE r.unit_id = u.id AND r.period && daterange(p_start, p_end, '[)')
+          AND (r.status = 'active' OR (r.status = 'held' AND (r.expires_at IS NULL OR r.expires_at > now()))))
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Atomic agreement creation: agreement, items, billing cycles and inventory
 -- holds commit together or not at all. Idempotent on checkout_key.
@@ -141,6 +153,6 @@ BEGIN
   RETURN jsonb_build_object('agreement_id', a.id, 'status', 'cancelled', 'was', a.status);
 END $$;
 
-REVOKE ALL ON FUNCTION public.billing_create_agreement, public.billing_cancel_agreement, public.sync_inventory_units
+REVOKE ALL ON FUNCTION public.inventory_available, public.billing_create_agreement, public.billing_cancel_agreement, public.sync_inventory_units
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.billing_create_agreement, public.billing_cancel_agreement, public.sync_inventory_units TO service_role;
+GRANT EXECUTE ON FUNCTION public.inventory_available, public.billing_create_agreement, public.billing_cancel_agreement, public.sync_inventory_units TO service_role;

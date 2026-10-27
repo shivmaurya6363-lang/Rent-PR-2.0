@@ -19,6 +19,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Fraunces"', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -49,7 +50,14 @@ export default {
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
+          soft: "hsl(var(--success-soft))",
         },
+        offer: {
+          DEFAULT: "hsl(var(--offer))",
+          foreground: "hsl(var(--offer-foreground))",
+          border: "hsl(var(--offer-border))",
+        },
+        surface: "hsl(var(--surface))",
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",

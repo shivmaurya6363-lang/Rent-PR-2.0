@@ -66,7 +66,7 @@ export interface CheckoutAgreementResult {
 interface PlanRow {
   plan_id: string; product_id: string; duration_months: number; monthly_rent: string; security_deposit: string;
   delivery_fee: string; installation_fee: string; first_month_discount: string; is_active: boolean;
-  name: string; status: string; in_stock: boolean; vendor_id: string | null; images: string[] | null; protection_plan_price: string | null;
+  name: string; slug: string; status: string; in_stock: boolean; vendor_id: string | null; images: string[] | null; protection_plan_price: string | null;
 }
 
 /** IST calendar date (YYYY-MM-DD) for "now". */
@@ -98,20 +98,35 @@ export async function isServiceable(q: Pool, pincode: string, productIds: string
   return new Set(rows.map((r) => r.product_id as string));
 }
 
-export async function createCheckout(
-  user: { id: string; email: string | null },
-  raw: unknown,
-  deps: { pool?: Pool; provider?: (id: ProviderId) => PaymentProvider; now?: Date } = {},
-): Promise<{ agreements: CheckoutAgreementResult[] }> {
-  const input = checkoutInput.parse(raw);
-  const pool = deps.pool ?? db();
-  const getP = deps.provider ?? getProvider;
-  const now = deps.now ?? new Date();
+export type PricedLine = {
+  lineId: string; productId: string; planId: string; durationMonths: number; startDate: string;
+  item: CheckoutInput["items"][number]; plan: PlanRow;
+};
 
+export interface PricedCart {
+  lines: PricedLine[];
+  quotes: RentalQuote[];
+  quoteByLine: Map<string, { quote: RentalQuote; line: PricedLine }>;
+  couponCode: string | null;
+  couponDiscountPaise: number;
+  settings: Awaited<ReturnType<typeof loadSettings>>;
+}
+
+/**
+ * Price a cart from database values only. The caller supplies plan ids, quantities,
+ * dates and choices; every amount, duration and fee is read here. Shared by the
+ * public cart quote and by checkout so the two can never disagree.
+ */
+export async function priceCart(
+  pool: Pool,
+  input: { items?: CheckoutInput["items"]; pincode?: string; couponCode?: string },
+  now: Date,
+  opts: { requirePincode: boolean },
+): Promise<PricedCart> {
   // ---- authoritative catalogue data
   const { rows: planRows } = await pool.query<PlanRow>(
     `SELECT rp.id plan_id, rp.product_id, rp.duration_months, rp.monthly_rent, rp.security_deposit, rp.delivery_fee,
-            rp.installation_fee, rp.first_month_discount, rp.is_active, p.name, p.status, p.in_stock, p.vendor_id, p.images, p.protection_plan_price
+            rp.installation_fee, rp.first_month_discount, rp.is_active, p.name, p.slug, p.status, p.in_stock, p.vendor_id, p.images, p.protection_plan_price
        FROM rental_plans rp JOIN products p ON p.id = rp.product_id WHERE rp.id = ANY($1::uuid[])`,
     [[...new Set(input.items.map((i) => i.planId))]],
   );
@@ -132,14 +147,14 @@ export async function createCheckout(
   });
 
   // ---- PIN code serviceability (required before confirming a rental)
-  const ok = await isServiceable(pool, input.pincode, [...new Set(lines.map((l) => l.productId))]);
-  const unserviceable = lines.find((l) => !ok.has(l.productId));
-  if (unserviceable) {
-    throw new HttpError(422, `${unserviceable.plan.name} is not available for PIN code ${input.pincode}`, "NOT_SERVICEABLE");
+  if (opts.requirePincode || input.pincode) {
+    if (!input.pincode) throw new HttpError(422, "Select your PIN code to continue", "PINCODE_REQUIRED");
+    const ok = await isServiceable(pool, input.pincode, [...new Set(lines.map((l) => l.productId))]);
+    const unserviceable = lines.find((l) => !ok.has(l.productId));
+    if (unserviceable) {
+      throw new HttpError(422, `${unserviceable.plan.name} is not available for PIN code ${input.pincode}`, "NOT_SERVICEABLE");
+    }
   }
-
-  // ---- address
-  const addressId = await resolveAddress(pool, user.id, input);
 
   // ---- coupon (applies to the combined first cycle, after product promotions)
   let couponCode: string | null = null;
@@ -189,6 +204,22 @@ export async function createCheckout(
     throw err;
   }
   const quoteByLine = new Map(lines.map((l, i) => [l.lineId, { quote: quotes[i], line: l }]));
+
+  return { lines, quotes, quoteByLine, couponCode, couponDiscountPaise: couponTotal, settings };
+}
+
+export async function createCheckout(
+  user: { id: string; email: string | null },
+  raw: unknown,
+  deps: { pool?: Pool; provider?: (id: ProviderId) => PaymentProvider; now?: Date } = {},
+): Promise<{ agreements: CheckoutAgreementResult[] }> {
+  const input = checkoutInput.parse(raw);
+  const pool = deps.pool ?? db();
+  const getP = deps.provider ?? getProvider;
+  const now = deps.now ?? new Date();
+
+  const { lines, quoteByLine, couponCode, settings } = await priceCart(pool, input, now, { requirePincode: true });
+  const addressId = await resolveAddress(pool, user.id, input);
 
   // ---- one agreement per distinct (duration, start date); incompatible schedules are never merged
   const groups = groupCartIntoAgreements(lines);
