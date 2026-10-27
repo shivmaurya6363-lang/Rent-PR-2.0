@@ -11,7 +11,8 @@ export class PricingError extends Error {
       | "BELOW_MIN_DURATION"
       | "INVALID_QUANTITY"
       | "DISCOUNT_EXCEEDS_RENT"
-      | "DISCOUNT_EXCEEDS_POLICY",
+      | "DISCOUNT_EXCEEDS_POLICY"
+      | "COUPON_EXCEEDS_RENT",
   ) {
     super(message);
     this.name = "PricingError";
@@ -31,6 +32,12 @@ export interface PlanPricing {
   /** Optional monthly protection plan, billed every cycle and not discounted. */
   protectionMonthlyPaise?: Paise;
   quantity?: number;
+  /**
+   * Coupon value allocated to this line (already multiplied for quantity). It
+   * reduces the first cycle's rent only and has its own cap in the coupon rules,
+   * so it is not subject to the first-month promotion cap.
+   */
+  couponDiscountPaise?: Paise;
 }
 
 export interface TaxConfig {
@@ -120,7 +127,13 @@ export function quoteRental(plan: PlanPricing, tax: TaxConfig): RentalQuote {
 
   const protection = (plan.protectionMonthlyPaise ?? 0) * quantity;
   const regularRent = plan.regularMonthlyRentPaise * quantity;
-  const discount = plan.firstMonthDiscountPaise * quantity;
+  const promoDiscount = plan.firstMonthDiscountPaise * quantity;
+  const couponDiscount = plan.couponDiscountPaise ?? 0;
+  assertPaise(couponDiscount, "coupon discount");
+  if (couponDiscount > regularRent - promoDiscount) {
+    throw new PricingError("Coupon cannot reduce the first month's rent below zero", "COUPON_EXCEEDS_RENT");
+  }
+  const discount = promoDiscount + couponDiscount;
 
   const cycles: BillingCycleQuote[] = [];
   for (let n = 1; n <= plan.durationMonths; n++) {

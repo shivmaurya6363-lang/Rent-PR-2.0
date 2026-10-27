@@ -117,3 +117,40 @@ describe("money helpers", () => {
     expect(formatINR(45000)).toContain("450");
   });
 });
+
+import { allocateProportionally, computeCouponDiscount, CouponError, CouponRule } from "../coupons";
+
+describe("coupons", () => {
+  const rule: CouponRule = {
+    code: "WELCOME", discountType: "percentage", discountValue: 10, minOrderPaise: 0,
+    maxDiscountPaise: null, expiresAt: null, isActive: true, usageLimit: null, usedCount: 0,
+  };
+  it("percentage coupon applies to first cycle rent, capped by max discount", () => {
+    expect(computeCouponDiscount(rule, 45000)).toBe(4500);
+    expect(computeCouponDiscount({ ...rule, maxDiscountPaise: 3000 }, 45000)).toBe(3000);
+  });
+  it("fixed coupon never exceeds the rent", () => {
+    expect(computeCouponDiscount({ ...rule, discountType: "fixed", discountValue: 99900 }, 45000)).toBe(45000);
+  });
+  it("rejects inactive, expired, exhausted and below-minimum coupons", () => {
+    expect(() => computeCouponDiscount({ ...rule, isActive: false }, 45000)).toThrow(CouponError);
+    expect(() => computeCouponDiscount({ ...rule, expiresAt: new Date(Date.now() - 1000) }, 45000)).toThrow(/expired/);
+    expect(() => computeCouponDiscount({ ...rule, usageLimit: 5, usedCount: 5 }, 45000)).toThrow(/redeemed/);
+    expect(() => computeCouponDiscount({ ...rule, minOrderPaise: 100000 }, 45000)).toThrow(/minimum/);
+  });
+  it("the coupon stacks on the promo in cycle 1 only and the recurring price is untouched", () => {
+    const q = quoteRental({ ...base, couponDiscountPaise: 4500 }, noTax);
+    expect(q.cycles.map((c) => c.rentPaise)).toEqual([40500, 50000, 50000]);
+    expect(q.cycles[0].discountPaise).toBe(9500);
+    expect(q.recurringTotalPaise).toBe(50000);
+    expect(() => quoteRental({ ...base, couponDiscountPaise: 50000 }, noTax)).toThrowError(
+      expect.objectContaining({ code: "COUPON_EXCEEDS_RENT" }),
+    );
+  });
+  it("allocates a coupon across lines so parts sum exactly", () => {
+    const parts = allocateProportionally(1000, [33333, 33333, 33334]);
+    expect(parts.reduce((a, b) => a + b, 0)).toBe(1000);
+    expect(allocateProportionally(0, [1, 2])).toEqual([0, 0]);
+    expect(allocateProportionally(5, [1, 1, 1]).reduce((a, b) => a + b, 0)).toBe(5);
+  });
+});

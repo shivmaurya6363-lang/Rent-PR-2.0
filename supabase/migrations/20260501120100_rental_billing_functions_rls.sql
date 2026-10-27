@@ -266,6 +266,11 @@ BEGIN
         UPDATE public.rental_agreements SET status = 'confirmed' WHERE id = a.id;
         a.status := 'confirmed';
         PERFORM public.confirm_reservations(a.id);
+        INSERT INTO public.delivery_orders (agreement_id, status, address_snapshot)
+        SELECT a.id, 'pending',
+               COALESCE((SELECT to_jsonb(ad) - 'user_id' FROM public.addresses ad WHERE ad.id = a.address_id),
+                        jsonb_build_object('pincode', a.delivery_pincode))
+         WHERE NOT EXISTS (SELECT 1 FROM public.delivery_orders d WHERE d.agreement_id = a.id);
       END IF;
     END IF;
 

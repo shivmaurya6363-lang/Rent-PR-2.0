@@ -62,6 +62,7 @@ d("billing + inventory database behaviour", () => {
     return { id, quote };
   }
 
+  const pid_ = (id: string) => `${id}_${run}`;
   const pid = (id: string) => `${id}_${run}`;
   const pay = (a: { id: string }, n: number, purpose: string, payId: string, amount: number, status = "captured", provider = "razorpay") =>
     q(`SELECT billing_apply_payment($1,$2,$3,$4,$5,$6,$7,$8) AS r`, [provider, a.id, n, purpose, pid(payId), "order_x", amount, status]).then((r) => r.rows[0].r);
@@ -222,11 +223,13 @@ d("billing + inventory database behaviour", () => {
   });
 
   describe("inventory", () => {
+    // Units are created by the products.stock_quantity sync trigger.
     async function seedUnits(n: number) {
-      const p = await q(`INSERT INTO products (vendor_id, name, slug, status) SELECT vendor_id,'Inv', $1,'approved' FROM products WHERE id=$2 RETURNING id`, [`inv-${randomUUID()}`, productId]);
-      const pid = p.rows[0].id as string;
-      for (let i = 0; i < n; i++) await q(`INSERT INTO inventory_units (product_id, serial_number) VALUES ($1,$2)`, [pid, `S${i}`]);
-      return pid;
+      const p = await q(
+        `INSERT INTO products (vendor_id, name, slug, status, stock_quantity) SELECT vendor_id,'Inv', $1,'approved',$3 FROM products WHERE id=$2 RETURNING id`,
+        [`inv-${randomUUID()}`, productId, n],
+      );
+      return p.rows[0].id as string;
     }
     const item = async () => {
       const a = await newAgreement();
@@ -234,6 +237,27 @@ d("billing + inventory database behaviour", () => {
     };
     const reserve = (pid: string, it: string, qty: number, s: string, e: string) =>
       q(`SELECT reserve_inventory($1,$2,$3,$4::date,$5::date) r`, [it, pid, qty, s, e]);
+
+    it("stock_quantity drives unit count: grows, and shrinks only by retiring free units", async () => {
+      const pid = await seedUnits(3);
+      const count = async () => (await q(`SELECT count(*)::int n FROM inventory_units WHERE product_id=$1 AND status<>'retired'`, [pid])).rows[0].n;
+      expect(await count()).toBe(3);
+      await q(`UPDATE products SET stock_quantity=5 WHERE id=$1`, [pid]);
+      expect(await count()).toBe(5);
+      await reserve(pid, await item(), 1, "2026-07-01", "2026-08-01");
+      await q(`UPDATE products SET stock_quantity=1 WHERE id=$1`, [pid]);
+      expect(await count()).toBeGreaterThanOrEqual(1); // the reserved unit is never retired
+      const reserved = await q(`SELECT count(*)::int n FROM inventory_units u JOIN inventory_reservations r ON r.unit_id=u.id WHERE u.product_id=$1 AND u.status='retired'`, [pid]);
+      expect(reserved.rows[0].n).toBe(0);
+    });
+
+    it("legacy in_stock product with quantity 0 is one unit; out of stock is none", async () => {
+      const mk = async (inStock: boolean) =>
+        (await q(`INSERT INTO products (vendor_id,name,slug,status,stock_quantity,in_stock) SELECT vendor_id,'L',$1,'approved',0,$3 FROM products WHERE id=$2 RETURNING id`, [`l-${randomUUID()}`, productId, inStock])).rows[0].id as string;
+      const a = await mk(true), b = await mk(false);
+      expect((await q(`SELECT count(*)::int n FROM inventory_units WHERE product_id=$1 AND status<>'retired'`, [a])).rows[0].n).toBe(1);
+      expect((await q(`SELECT count(*)::int n FROM inventory_units WHERE product_id=$1 AND status<>'retired'`, [b])).rows[0].n).toBe(0);
+    });
 
     it("available inventory reserves; unavailable raises INSUFFICIENT_INVENTORY", async () => {
       const pid = await seedUnits(1);
@@ -308,6 +332,76 @@ d("billing + inventory database behaviour", () => {
       await q(`SELECT confirm_reservations($1)`, [a.id]);
       await q(`SELECT release_reservations($1)`, [a.id]);
       await reserve(pid, await item(), 1, "2026-07-01", "2026-10-01");
+    });
+  });
+
+  describe("atomic agreement creation", () => {
+    const payload = (pid: string, key: string, qty = 1) => {
+      const quote = quoteRental(
+        { regularMonthlyRentPaise: 50000, firstMonthDiscountPaise: 5000, durationMonths: 3, securityDepositPaise: 100000, deliveryFeePaise: 20000, installationFeePaise: 0, quantity: qty },
+        { rentGstBps: 0 },
+      );
+      const sched = buildBillingSchedule(quote, new Date("2026-06-10T06:00:00Z"));
+      return {
+        customer_id: uid, address_id: addressId, delivery_pincode: "560001", provider: "razorpay", start_date: "2026-06-10",
+        billing_anchor_at: "2026-06-10T06:00:00Z", duration_months: 3, regular_monthly_paise: 50000 * qty,
+        first_cycle_paise: quote.cycles[0].totalPaise, first_month_discount_paise: quote.cycles[0].discountPaise,
+        upfront_paise: quote.upfront.totalPaise, payable_today_paise: quote.payableTodayPaise, gst_bps: 0,
+        checkout_key: key, reserve_until: "2026-09-12", hold_minutes: 30,
+        items: [{ product_id: pid, rental_plan_id: planId, quantity: qty, product_name: "X", regular_rent_paise: 50000,
+          first_month_discount_paise: 5000, security_deposit_paise: 100000, delivery_fee_paise: 20000, installation_fee_paise: 0 }],
+        cycles: sched.map((c) => ({ cycle: c.cycle, kind: c.kind, due_at: c.dueAt.toISOString(), regular_rent_paise: c.regularRentPaise,
+          discount_paise: c.discountPaise, rent_paise: c.rentPaise, tax_paise: c.taxPaise, protection_paise: c.protectionPaise, total_paise: c.totalPaise })),
+      };
+    };
+    const create = (p: object) => q(`SELECT billing_create_agreement($1::jsonb) r`, [JSON.stringify(p)]).then((r) => r.rows[0].r);
+    const mkProduct = async (stock: number) =>
+      (await q(`INSERT INTO products (vendor_id,name,slug,status,stock_quantity) SELECT vendor_id,'C',$1,'approved',$3 FROM products WHERE id=$2 RETURNING id`, [`c-${randomUUID()}`, productId, stock])).rows[0].id as string;
+
+    it("creates agreement, items, 3 cycles and a hold; is idempotent on checkout_key", async () => {
+      const pid = await mkProduct(1);
+      const key = `k-${randomUUID()}`;
+      const r1 = await create(payload(pid, key));
+      expect(r1.existing).toBe(false);
+      const r2 = await create(payload(pid, key));
+      expect(r2).toMatchObject({ existing: true, agreement_id: r1.agreement_id });
+      expect((await q(`SELECT count(*)::int n FROM billing_cycles WHERE agreement_id=$1`, [r1.agreement_id])).rows[0].n).toBe(3);
+      expect((await q(`SELECT count(*)::int n FROM inventory_reservations r JOIN rental_agreement_items i ON i.id=r.agreement_item_id WHERE i.agreement_id=$1 AND r.status='held'`, [r1.agreement_id])).rows[0].n).toBe(1);
+    });
+
+    it("rolls back everything when stock is insufficient (no orphan agreement)", async () => {
+      const pid = await mkProduct(1);
+      const key = `k-${randomUUID()}`;
+      await expect(create(payload(pid, key, 2))).rejects.toThrow(/INSUFFICIENT_INVENTORY/);
+      expect((await q(`SELECT count(*)::int n FROM rental_agreements WHERE checkout_key=$1`, [key])).rows[0].n).toBe(0);
+    });
+
+    it("concurrent checkouts for the last unit: one agreement wins, losers leave nothing behind", async () => {
+      const pid = await mkProduct(1);
+      const keys = Array.from({ length: 8 }, () => `k-${randomUUID()}`);
+      const res = await Promise.allSettled(keys.map((k) => create(payload(pid, k))));
+      expect(res.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      const n = (await q(`SELECT count(*)::int n FROM rental_agreements WHERE checkout_key = ANY($1)`, [keys])).rows[0].n;
+      expect(n).toBe(1);
+    });
+
+    it("first payment creates a delivery order; cancelling before delivery frees stock and closes billing", async () => {
+      const pid = await mkProduct(1);
+      const r = await create(payload(pid, `k-${randomUUID()}`));
+      await q(`SELECT billing_apply_payment('razorpay',$1,1,'first_cycle_and_upfront',$2,'o',165000,'captured')`, [r.agreement_id, pid_(`cancel`)]);
+      expect((await q(`SELECT count(*)::int n FROM delivery_orders WHERE agreement_id=$1`, [r.agreement_id])).rows[0].n).toBe(1);
+      await q(`SELECT billing_cancel_agreement($1,'changed mind')`, [r.agreement_id]);
+      const st = await q(`SELECT a.status, (SELECT count(*)::int FROM billing_cycles c WHERE c.agreement_id=a.id AND c.status='cancelled') cancelled FROM rental_agreements a WHERE id=$1`, [r.agreement_id]);
+      expect(st.rows[0]).toMatchObject({ status: "cancelled", cancelled: 2 });
+      await create(payload(pid, `k-${randomUUID()}`)); // stock is free again
+    });
+
+    it("an active (delivered) rental cannot be cancelled through the pre-delivery path", async () => {
+      const pid = await mkProduct(1);
+      const r = await create(payload(pid, `k-${randomUUID()}`));
+      await q(`SELECT billing_apply_payment('razorpay',$1,1,'first_cycle_and_upfront',$2,'o',165000,'captured')`, [r.agreement_id, pid_("active")]);
+      await q(`UPDATE rental_agreements SET status='active' WHERE id=$1`, [r.agreement_id]);
+      await expect(q(`SELECT billing_cancel_agreement($1,'x')`, [r.agreement_id])).rejects.toThrow(/CANNOT_CANCEL/);
     });
   });
 
