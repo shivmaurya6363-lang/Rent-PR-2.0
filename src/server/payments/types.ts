@@ -135,6 +135,9 @@ export interface PaymentProvider {
   /** Second step of a merchant-initiated debit (PhonePe): execute after the pre-debit notice. */
   executeRecurringDebit?(input: { subscriptionRef: string; notificationId: string; transactionId: string; agreementId: string }): Promise<{ state: string }>;
 
+  /** Second step for providers that authorise recurring payments separately from the first payment (PhonePe autopay). */
+  createMandate?(input: { agreementId: string; customerKey: string; phone: string | null; recurringAmountPaise: number; cycles: number; startAt: Date; redirectUrl: string }): Promise<{ merchantSubscriptionId: string; redirectUrl?: string }>;
+
   /** Add billing cycles to a live mandate (rental extension). Only providers that can change the cycle count implement it. */
   extendRecurringAgreement?(ref: { subscriptionId: string }, addCycles: number): Promise<void>;
 

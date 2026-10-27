@@ -3,6 +3,7 @@ import SiteHeader from "@/components/site/SiteHeader";
 import Footer from "@/components/Footer";
 import CheckoutClient from "@/components/checkout/CheckoutClient";
 
+export const revalidate = 300; // re-render so the header categories never go stale
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
 export default function CheckoutPage() {

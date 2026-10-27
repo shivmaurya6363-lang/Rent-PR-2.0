@@ -221,6 +221,32 @@ d("customer and admin rental operations", () => {
     });
   });
 
+  describe("PhonePe autopay (second step)", () => {
+    const mandateCalls: any[] = [];
+    const ppProvider = { ...phonepeLike, async createMandate(i: any) { mandateCalls.push(i); return { merchantSubscriptionId: `SUB_${uniq()}`, redirectUrl: "https://pay.example/mandate" }; } } as unknown as PaymentProvider;
+    const ppDeps = { get pool() { return pool; }, provider: () => ppProvider };
+    it("authorises the remaining cycles at the regular amount and stores the mandate id so callbacks resolve", async () => {
+      const a = await running({ provider: "phonepe" });
+      const r = await customer.startMandate(me(), a.id, ppDeps);
+      expect(r.redirectUrl).toBe("https://pay.example/mandate");
+      expect(mandateCalls.at(-1)).toMatchObject({ recurringAmountPaise: 50000, cycles: 2, agreementId: a.id });
+      const pa = (await q(`SELECT provider_subscription_id, total_count, status FROM provider_agreements WHERE agreement_id=$1`, [a.id])).rows[0];
+      expect(pa.provider_subscription_id).toMatch(/^SUB_/);
+      expect(pa).toMatchObject({ total_count: 2, status: "created" });
+      expect((await customer.getRental(base.userId, a.id, ppDeps)).mandate).toMatchObject({ provider: "phonepe", status: "created" });
+    });
+    it("is refused for Razorpay rentals, an active mandate, other customers and unpaid rentals", async () => {
+      const rz = await running();
+      await expectHttp(customer.startMandate(me(), rz.id, deps), 409, "NOT_REQUIRED");
+      const a = await running({ provider: "phonepe" });
+      await q(`UPDATE provider_agreements SET status='active' WHERE agreement_id=$1`, [a.id]);
+      await expectHttp(customer.startMandate(me(), a.id, ppDeps), 409, "ALREADY_ACTIVE");
+      await expectHttp(customer.startMandate({ id: stranger, email: null }, a.id, ppDeps), 404);
+      const unpaid = await createAgreement(pool, base, { provider: "phonepe" });
+      await expectHttp(customer.startMandate(me(), unpaid.id, ppDeps), 409, "NOT_ALLOWED");
+    });
+  });
+
   describe("support tickets and invoices", () => {
     it("creates and lists only the caller's tickets, with a cap on open ones", async () => {
       const u = randomUUID();

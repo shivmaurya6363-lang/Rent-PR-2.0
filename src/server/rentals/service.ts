@@ -11,6 +11,7 @@ import { applyProviderEvent } from "../payments/webhook-processor";
 import { addMonthsIst, istDateString } from "@/lib/billing/schedule";
 import { formatINR } from "@/lib/billing/money";
 import { log } from "../log";
+import { getEnv } from "../env";
 
 type Deps = { pool?: Pool; provider?: (id: ProviderId) => PaymentProvider };
 const pool_ = (d?: Deps) => d?.pool ?? db();
@@ -70,6 +71,7 @@ export async function getRental(userId: string, id: string, deps?: Deps) {
     delivery: delivery.rows[0] ?? null,
     pickup: pickup.rows[0] ?? null,
     requests: requests.rows,
+    mandate: (await pool.query(`SELECT provider, status, total_count, paid_count FROM provider_agreements WHERE agreement_id=$1 ORDER BY created_at DESC LIMIT 1`, [id])).rows[0] ?? null,
     canCancel: ["awaiting_payment", "payment_failed", "confirmed", "out_for_delivery"].includes(a.status),
     canExtend: ["confirmed", "out_for_delivery", "active", "overdue"].includes(a.status),
     canRequestPickup: ["active", "overdue"].includes(a.status),
@@ -263,3 +265,38 @@ export async function getInvoice(userId: string, invoiceId: string, deps?: Deps)
 }
 
 export { tx, addMonthsIst };
+
+/**
+ * PhonePe collects the first payment and the recurring authorisation separately.
+ * After the first payment, the customer authorises the monthly autopay for the
+ * remaining cycles. Rentals on other providers never need this step.
+ */
+export async function startMandate(user: { id: string; email: string | null }, id: string, deps?: Deps) {
+  const pool = pool_(deps);
+  const a = await loadOwned(pool, user.id, id);
+  if (a.provider !== "phonepe") throw new HttpError(409, "Autopay for this rental was already authorised at checkout.", "NOT_REQUIRED");
+  if (!["confirmed", "out_for_delivery", "active", "overdue"].includes(a.status)) throw new HttpError(409, "Autopay can only be set up for a paid, running rental.", "NOT_ALLOWED");
+
+  const pa = (await pool.query(`SELECT id, status, provider_subscription_id FROM provider_agreements WHERE agreement_id=$1 AND status NOT IN ('cancelled','completed','expired') ORDER BY created_at DESC LIMIT 1`, [id])).rows[0];
+  if (pa?.status === "active") throw new HttpError(409, "Autopay is already active.", "ALREADY_ACTIVE");
+  const remaining = (await pool.query(`SELECT cycle_number, total_paise, due_at FROM billing_cycles WHERE agreement_id=$1 AND cycle_number >= 2 AND status IN ('scheduled','due','failed') ORDER BY cycle_number`, [id])).rows;
+  if (!remaining.length) throw new HttpError(409, "There are no future payments to authorise.", "NOTHING_TO_AUTHORISE");
+  const provider = prov_(deps)("phonepe");
+  if (!provider.createMandate) throw new HttpError(409, "Autopay setup is not available.", "PROVIDER_UNSUPPORTED");
+
+  const profile = (await pool.query(`SELECT phone FROM profiles WHERE user_id=$1`, [user.id])).rows[0];
+  const m = await provider.createMandate({
+    agreementId: id, customerKey: user.id, phone: profile?.phone ?? null, recurringAmountPaise: Number(remaining[0].total_paise),
+    cycles: remaining.length, startAt: new Date(remaining[0].due_at), redirectUrl: `${getEnv().NEXT_PUBLIC_SITE_URL}/account/rentals/${id}`,
+  }).catch((err) => {
+    log.error("phonepe mandate failed", { id, error: err instanceof Error ? err.message : String(err) });
+    throw new HttpError(502, "We could not start the autopay setup. Please try again.", "PROVIDER_ERROR");
+  });
+  // Store the mandate id on the live provider agreement so its callbacks resolve to this rental.
+  await pool.query(
+    `UPDATE provider_agreements SET provider_subscription_id=$2, status='created', recurring_amount_paise=$3, total_count=$4, first_charge_at=$5 WHERE id=$1`,
+    [pa.id, m.merchantSubscriptionId, Number(remaining[0].total_paise), remaining.length, remaining[0].due_at],
+  );
+  await audit(pool, { actorId: user.id, actorRole: "customer", action: "mandate_started", entity: "rental_agreement", entityId: id, detail: { provider: "phonepe" } });
+  return { redirectUrl: m.redirectUrl ?? null };
+}

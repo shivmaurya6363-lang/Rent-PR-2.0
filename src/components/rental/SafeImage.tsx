@@ -30,6 +30,5 @@ export function SafeImage({ src, alt, className, sizes = "(min-width:1024px) 25v
   if (src.startsWith("/") || allowedHosts.has(host)) {
     return <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={className ?? "object-cover"} />;
   }
-  // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={alt} loading={priority ? "eager" : "lazy"} decoding="async" className={`absolute inset-0 h-full w-full ${className ?? "object-cover"}`} />;
 }

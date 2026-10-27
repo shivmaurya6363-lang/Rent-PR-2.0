@@ -13,6 +13,7 @@ import { seedSampleProducts, hasProducts } from '@/services/seedData';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ClickableStatCard from '@/components/dashboard/ClickableStatCard';
+import RentalMetrics from '@/components/admin/rentals/RentalMetrics';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -49,13 +50,14 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
+      <RentalMetrics />
       <div className="p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">Overview of your rental marketplace</p>
           </div>
-          {!productsExist && (
+          {!productsExist && process.env.NODE_ENV !== 'production' && (
             <Button onClick={handleSeedData} disabled={isSeeding}>
               {isSeeding ? (
                 <>

@@ -248,6 +248,17 @@ export async function listInventory(deps?: Deps) {
        FROM products p JOIN inventory_units u ON u.product_id=p.id WHERE p.status='approved' GROUP BY p.id ORDER BY p.name LIMIT 300`)).rows;
 }
 
+export async function listUnits(productId: string, deps?: Deps) {
+  if (!/^[0-9a-f-]{36}$/i.test(productId)) throw new HttpError(404, "Product not found", "NOT_FOUND");
+  const { rows } = await pool_(deps).query(
+    `SELECT u.id, u.serial_number, u.status, u.condition_notes,
+            (SELECT json_build_object('agreement_number', a.agreement_number, 'until', upper(r.period))
+               FROM inventory_reservations r JOIN rental_agreement_items i ON i.id = r.agreement_item_id JOIN rental_agreements a ON a.id = i.agreement_id
+              WHERE r.unit_id = u.id AND r.status IN ('held','active') ORDER BY r.created_at DESC LIMIT 1) reservation
+       FROM inventory_units u WHERE u.product_id = $1 AND u.status <> 'retired' ORDER BY u.serial_number`, [productId]);
+  return rows;
+}
+
 export async function setUnitStatus(admin: Admin, unitId: string, status: "available" | "maintenance" | "damaged" | "retired", deps?: Deps) {
   const pool = pool_(deps);
   if (!/^[0-9a-f-]{36}$/i.test(unitId)) throw new HttpError(404, "Unit not found", "NOT_FOUND");
