@@ -199,6 +199,15 @@ BEGIN
   IF FOUND AND att.status IN ('captured','refunded','partially_refunded') THEN
     RETURN jsonb_build_object('idempotent', true, 'attempt_id', att.id, 'agreement_status', a.status);
   END IF;
+  IF NOT FOUND AND p_provider_order_id IS NOT NULL THEN
+    -- adopt a merchant-initiated attempt (for example a PhonePe debit) created before the provider gave a payment id
+    SELECT * INTO att FROM public.payment_attempts
+     WHERE provider = p_provider AND provider_order_id = p_provider_order_id AND provider_payment_id IS NULL
+       AND agreement_id = a.id FOR UPDATE;
+    IF FOUND THEN
+      UPDATE public.payment_attempts SET provider_payment_id = p_provider_payment_id WHERE id = att.id RETURNING * INTO att;
+    END IF;
+  END IF;
   IF NOT FOUND THEN
     INSERT INTO public.payment_attempts (agreement_id, cycle_id, provider, purpose, provider_payment_id, provider_order_id,
                                          amount_paise, status, method)
@@ -266,6 +275,9 @@ BEGIN
         UPDATE public.rental_agreements SET status = 'confirmed' WHERE id = a.id;
         a.status := 'confirmed';
         PERFORM public.confirm_reservations(a.id);
+        IF a.coupon_code IS NOT NULL THEN
+          UPDATE public.coupons SET used_count = used_count + 1 WHERE upper(code) = upper(a.coupon_code);
+        END IF;
         INSERT INTO public.delivery_orders (agreement_id, status, address_snapshot)
         SELECT a.id, 'pending',
                COALESCE((SELECT to_jsonb(ad) - 'user_id' FROM public.addresses ad WHERE ad.id = a.address_id),

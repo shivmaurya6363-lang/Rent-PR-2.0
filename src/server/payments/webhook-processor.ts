@@ -169,4 +169,4 @@ async function applyEvent(q: Queryable, provider: PaymentProvider, event: Normal
   }
 }
 
-export { applyEvent as _applyEventForReconcile };
+export { applyEvent as applyProviderEvent };

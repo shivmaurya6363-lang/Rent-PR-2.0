@@ -72,6 +72,11 @@ export async function findAgreementByRef(
     const { rows } = await q.query(`${base} JOIN provider_agreements p ON p.agreement_id=a.id WHERE p.provider=$1 AND p.provider_order_id=$2`, [ref.provider, ref.orderId]);
     if (rows[0]) return rows[0];
   }
+  if (ref.orderId) {
+    // merchant-initiated debits carry their own transaction id on the attempt row
+    const { rows } = await q.query(`${base} JOIN payment_attempts pa ON pa.agreement_id=a.id WHERE pa.provider=$1 AND pa.provider_order_id=$2 LIMIT 1`, [ref.provider, ref.orderId]);
+    if (rows[0]) return rows[0];
+  }
   if (ref.agreementId && /^[0-9a-f-]{36}$/i.test(ref.agreementId)) {
     const { rows } = await q.query(`${base} WHERE a.id=$1 AND a.provider=$2`, [ref.agreementId, ref.provider]);
     if (rows[0]) return rows[0];

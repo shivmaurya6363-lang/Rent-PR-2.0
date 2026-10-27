@@ -2,7 +2,7 @@ import "server-only";
 import type { Queryable } from "../db";
 import { businessCode } from "../db";
 import { audit } from "../billing/repo";
-import { _applyEventForReconcile } from "./webhook-processor";
+import { applyProviderEvent } from "./webhook-processor";
 import type { PaymentProvider } from "./types";
 
 export interface ReconcileSummary {
@@ -33,7 +33,7 @@ export async function reconcileAgreement(q: Queryable, provider: PaymentProvider
   for (const payment of state.payments) {
     if (payment.status !== "captured") continue;
     try {
-      applied.push(await _applyEventForReconcile(q, provider, { kind: "payment_captured", payment: { ...payment, subscriptionId: ref.subscriptionId, orderId: payment.orderId ?? ref.orderId }, agreementId }));
+      applied.push(await applyProviderEvent(q, provider, { kind: "payment_captured", payment: { ...payment, subscriptionId: ref.subscriptionId, orderId: payment.orderId ?? ref.orderId }, agreementId }));
     } catch (err) {
       const code = businessCode(err);
       if (!code) throw err;
@@ -41,7 +41,7 @@ export async function reconcileAgreement(q: Queryable, provider: PaymentProvider
     }
   }
   if (ref.subscriptionId) {
-    applied.push(await _applyEventForReconcile(q, provider, { kind: "agreement_status", status: state.status, subscriptionId: ref.subscriptionId, agreementId, nextChargeAt: state.nextChargeAt ?? null }));
+    applied.push(await applyProviderEvent(q, provider, { kind: "agreement_status", status: state.status, subscriptionId: ref.subscriptionId, agreementId, nextChargeAt: state.nextChargeAt ?? null }));
   }
   await q.query(`UPDATE provider_agreements SET last_synced_at=now() WHERE agreement_id=$1 AND provider=$2 AND status NOT IN ('cancelled','completed','expired')`, [agreementId, provider.id]);
   if (discrepancies.length) await audit(q, { action: "reconcile_discrepancy", entity: "rental_agreement", entityId: agreementId, detail: { discrepancies } });

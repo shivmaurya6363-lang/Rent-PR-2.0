@@ -132,6 +132,9 @@ export interface PaymentProvider {
   /** Merchant-initiated debit for providers that require it. */
   chargeRecurringPayment(input: { subscriptionRef: string; cycleNumber: number; amountPaise: Paise; dueAt: Date; agreementId: string }): Promise<{ providerReference: string; state: string }>;
 
+  /** Second step of a merchant-initiated debit (PhonePe): execute after the pre-debit notice. */
+  executeRecurringDebit?(input: { subscriptionRef: string; notificationId: string; transactionId: string; agreementId: string }): Promise<{ state: string }>;
+
   cancelRecurringAgreement(ref: { subscriptionId?: string; orderId?: string }, opts: { atCycleEnd: boolean }): Promise<void>;
   pauseRecurringAgreement(ref: { subscriptionId: string }): Promise<void>;
   resumeRecurringAgreement(ref: { subscriptionId: string }): Promise<void>;
