@@ -1,3 +1,5 @@
+"use client";
+
 import LocationDrawer from '@/components/LocationDrawer';
 import { useLocation } from '@/contexts/LocationContext';
 

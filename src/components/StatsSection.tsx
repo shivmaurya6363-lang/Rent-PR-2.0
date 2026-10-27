@@ -1,3 +1,5 @@
+"use client";
+
 const stats = [
   { value: "5+", label: "Cities" },
   { value: "3+", label: "Years in Business" },

@@ -1,5 +1,7 @@
+"use client";
+
 import { Check, X } from "lucide-react";
-import moveInSaleImg from "@/assets/move-in-sale.png";
+import { moveInSaleImg } from "@/lib/assets";
 
 const features = [
   { label: "No Lump Sum Payment", purchase: false, emi: true, rentpr: true },

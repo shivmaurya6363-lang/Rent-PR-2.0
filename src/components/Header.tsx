@@ -1,9 +1,11 @@
-import { Link, useNavigate } from "react-router-dom";
-import rentprLogo from "@/assets/rentpr-logo.png";
+"use client";
+
+import { Link, useNavigate } from "@/lib/router";
+import { rentprLogo } from "@/lib/assets";
 import { ShoppingCart, User, Menu, X, Search, Shield, LogOut, ChevronDown, MapPin, Store, Package, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useCart } from "@/context/CartContext";
+import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "@/contexts/LocationContext";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";

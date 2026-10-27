@@ -1,7 +1,9 @@
+"use client";
+
 import { useState } from "react";
 import { Shield, Check, Info, Package, AlertTriangle, ShoppingBag, Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart } from "@/context/CartContext";
+import { useCart } from "@/contexts/CartContext";
 import CouponInput, { type CouponDiscount } from "@/components/CouponInput";
 import {
   Dialog,

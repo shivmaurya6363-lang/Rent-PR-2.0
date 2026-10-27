@@ -1,3 +1,5 @@
+"use client";
+
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const MarqueeBanner = () => {

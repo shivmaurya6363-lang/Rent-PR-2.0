@@ -1,5 +1,7 @@
-import { Link, useLocation } from 'react-router-dom';
-import rentprLogo from '@/assets/rentpr-logo.png';
+"use client";
+
+import { Link, useLocation } from '@/lib/router';
+import { rentprLogo as rentprLogo } from '@/lib/assets';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { Button } from '@/components/ui/button';

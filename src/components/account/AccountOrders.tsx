@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +17,7 @@ import { Package, Clock, Calendar, Download, XCircle, Loader2, FileText } from "
 import { format } from "date-fns";
 import { downloadAgreementPdf } from "@/utils/generateAgreementPdf";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",

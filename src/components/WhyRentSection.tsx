@@ -1,3 +1,5 @@
+"use client";
+
 import { Home, IndianRupee, Smile, RefreshCw } from "lucide-react";
 
 const features = [

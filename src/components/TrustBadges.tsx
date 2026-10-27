@@ -1,3 +1,5 @@
+"use client";
+
 import { Shield, Truck, RotateCcw, Headphones, Clock, CreditCard } from "lucide-react";
 
 const TrustBadges = () => {

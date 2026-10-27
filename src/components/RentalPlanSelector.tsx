@@ -1,3 +1,5 @@
+"use client";
+
 import { Check } from "lucide-react";
 import { RentalPlan } from "@/types/product";
 import { cn } from "@/lib/utils";

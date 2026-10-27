@@ -1,5 +1,7 @@
+"use client";
+
 import { Check, X, ArrowRight, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 
 const features = [
