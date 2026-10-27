@@ -1,7 +1,7 @@
 import "server-only";
 import type { Pool } from "pg";
 import { notify } from "../notifications/service";
-import { istDateString } from "./schedule";
+import { istDateString } from "@/lib/billing/schedule";
 import { log } from "../log";
 import { reconcileAgreement } from "../payments/reconcile";
 import type { PaymentProvider, ProviderId } from "../payments/types";

@@ -10,7 +10,7 @@ import { RazorpayProvider } from "../razorpay/adapter";
 import { signForTest } from "../razorpay/signatures";
 import { processWebhook } from "../webhook-processor";
 import { reconcileAgreement } from "../reconcile";
-import { istDateString } from "../../billing/schedule";
+import { istDateString } from "@/lib/billing/schedule";
 import { Base, createAgreement, seedBase } from "@/test/db-helpers";
 import type { ProviderAgreementState } from "../types";
 

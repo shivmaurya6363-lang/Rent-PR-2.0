@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { createCheckout } from "../service";
 import { HttpError } from "../../http";
 import type { AgreementForProvider, PaymentProvider } from "../../payments/types";
-import { istDateString } from "../../billing/schedule";
+import { istDateString } from "@/lib/billing/schedule";
 
 const url = process.env.TEST_DATABASE_URL;
 const d = url ? describe : describe.skip;

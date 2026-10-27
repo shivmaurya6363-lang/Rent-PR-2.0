@@ -6,8 +6,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Pool, PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
-import { quoteRental } from "../pricing";
-import { buildBillingSchedule } from "../schedule";
+import { quoteRental } from "@/lib/billing/pricing";
+import { buildBillingSchedule } from "@/lib/billing/schedule";
 
 const url = process.env.TEST_DATABASE_URL;
 const d = url ? describe : describe.skip;

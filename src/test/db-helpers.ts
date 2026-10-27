@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
-import { quoteRental } from "@/server/billing/pricing";
-import { buildBillingSchedule } from "@/server/billing/schedule";
+import { quoteRental } from "@/lib/billing/pricing";
+import { buildBillingSchedule } from "@/lib/billing/schedule";
 
 export interface Base {
   userId: string;

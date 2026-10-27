@@ -1,6 +1,6 @@
-import type { Paise } from "../billing/money";
-import type { ScheduledCycle } from "../billing/schedule";
-import type { ProviderAgreementStatus } from "../billing/states";
+import type { Paise } from "@/lib/billing/money";
+import type { ScheduledCycle } from "@/lib/billing/schedule";
+import type { ProviderAgreementStatus } from "@/lib/billing/states";
 
 export type ProviderId = "razorpay" | "phonepe";
 

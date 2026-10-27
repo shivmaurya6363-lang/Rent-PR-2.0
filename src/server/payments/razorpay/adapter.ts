@@ -1,7 +1,7 @@
 import "server-only";
 import { razorpayConfig } from "../../env";
-import { formatINR } from "../../billing/money";
-import { recurringCycleCount, firstRecurringChargeAt } from "../../billing/schedule";
+import { formatINR } from "@/lib/billing/money";
+import { recurringCycleCount, firstRecurringChargeAt } from "@/lib/billing/schedule";
 import type {
   AgreementForProvider,
   CreatedAgreement,
@@ -13,7 +13,7 @@ import type {
 import { rzp } from "./client";
 import { normalizeRazorpayEvent } from "./events";
 import { verifyOrderCheckoutSignature, verifySubscriptionCheckoutSignature, verifyWebhookSignature } from "./signatures";
-import type { ProviderAgreementStatus } from "../../billing/states";
+import type { ProviderAgreementStatus } from "@/lib/billing/states";
 import { createHash } from "node:crypto";
 
 /**

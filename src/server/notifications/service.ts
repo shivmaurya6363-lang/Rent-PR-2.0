@@ -1,7 +1,7 @@
 import "server-only";
 import type { Queryable } from "../db";
 import { getEnv } from "../env";
-import { formatINR } from "../billing/money";
+import { formatINR } from "@/lib/billing/money";
 import { log } from "../log";
 
 export type Template =

@@ -12,7 +12,7 @@ import {
   ProviderPayment,
   UnsupportedByProviderError,
 } from "../types";
-import type { ProviderAgreementStatus } from "../../billing/states";
+import type { ProviderAgreementStatus } from "@/lib/billing/states";
 
 /**
  * PhonePe adapter. It keeps the behaviour of the legacy Supabase function

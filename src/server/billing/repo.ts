@@ -2,8 +2,8 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { Queryable } from "../db";
 import type { ProviderId } from "../payments/types";
-import type { ProviderAgreementStatus } from "./states";
-import { canTransition, providerAgreementMachine, providerAgreementRank } from "./states";
+import type { ProviderAgreementStatus } from "@/lib/billing/states";
+import { canTransition, providerAgreementMachine, providerAgreementRank } from "@/lib/billing/states";
 
 export interface AgreementRow {
   id: string;

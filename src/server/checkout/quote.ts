@@ -4,9 +4,9 @@ import type { Pool } from "pg";
 import { db } from "../db";
 import { HttpError } from "../http";
 import { billingAnchor, checkoutInput, isServiceable, priceCart } from "./service";
-import { buildBillingSchedule, combineQuotes, istDateString } from "../billing/schedule";
-import { groupCartIntoAgreements } from "../billing/grouping";
-import type { RentalQuote } from "../billing/pricing";
+import { buildBillingSchedule, combineQuotes, istDateString } from "@/lib/billing/schedule";
+import { groupCartIntoAgreements } from "@/lib/billing/grouping";
+import type { RentalQuote } from "@/lib/billing/pricing";
 
 const quoteInput = z.object({
   items: checkoutInput.shape.items.max(20),

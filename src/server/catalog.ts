@@ -2,7 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import type { Pool } from "pg";
 import { db } from "./db";
-import { Paise, rupeesToPaise } from "./billing/money";
+import { Paise, rupeesToPaise } from "@/lib/billing/money";
 
 /**
  * Read model for the public storefront. Visibility rules live in SQL: only

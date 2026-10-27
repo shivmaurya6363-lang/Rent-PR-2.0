@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RazorpayProvider } from "../razorpay/adapter";
 import { normalizeRazorpayEvent } from "../razorpay/events";
 import { signForTest, verifyOrderCheckoutSignature, verifySubscriptionCheckoutSignature, verifyWebhookSignature } from "../razorpay/signatures";
-import { quoteRental } from "../../billing/pricing";
-import { buildBillingSchedule } from "../../billing/schedule";
+import { quoteRental } from "@/lib/billing/pricing";
+import { buildBillingSchedule } from "@/lib/billing/schedule";
 import type { AgreementForProvider } from "../types";
 
 const KEY_SECRET = "dummy_key_secret";

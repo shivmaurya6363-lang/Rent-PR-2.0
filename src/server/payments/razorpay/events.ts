@@ -1,5 +1,5 @@
 import type { NormalizedEvent, ProviderPayment } from "../types";
-import type { ProviderAgreementStatus } from "../../billing/states";
+import type { ProviderAgreementStatus } from "@/lib/billing/states";
 
 type Json = Record<string, any>;
 

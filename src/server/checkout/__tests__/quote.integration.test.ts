@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { quoteCart } from "../quote";
-import { istDateString } from "../../billing/schedule";
+import { istDateString } from "@/lib/billing/schedule";
 
 const url = process.env.TEST_DATABASE_URL;
 const d = url ? describe : describe.skip;

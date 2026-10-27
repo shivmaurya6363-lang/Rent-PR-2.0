@@ -7,11 +7,11 @@ import { HttpError } from "../http";
 import { log } from "../log";
 import { getEnv } from "../env";
 import { audit } from "../billing/repo";
-import { PricingError, quoteRental, RentalQuote } from "../billing/pricing";
-import { combineQuotes, buildBillingSchedule, istDateString } from "../billing/schedule";
-import { groupCartIntoAgreements } from "../billing/grouping";
-import { allocateProportionally, computeCouponDiscount, CouponError } from "../billing/coupons";
-import { rupeesToPaise } from "../billing/money";
+import { PricingError, quoteRental, RentalQuote } from "@/lib/billing/pricing";
+import { combineQuotes, buildBillingSchedule, istDateString } from "@/lib/billing/schedule";
+import { groupCartIntoAgreements } from "@/lib/billing/grouping";
+import { allocateProportionally, computeCouponDiscount, CouponError } from "@/lib/billing/coupons";
+import { rupeesToPaise } from "@/lib/billing/money";
 import type { ClientCheckout, PaymentProvider, ProviderId } from "../payments/types";
 import { getProvider } from "../payments/registry";
 
