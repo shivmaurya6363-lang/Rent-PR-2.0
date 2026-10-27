@@ -191,6 +191,15 @@ export function categoryScope(tree: CategoryNode[], slug: string): { category: C
   return { category, ids, trail };
 }
 
+/** Root-to-leaf trail for a category id (for breadcrumbs). */
+export function categoryTrailById(tree: CategoryNode[], id: string | null): CategoryNode[] {
+  if (!id) return [];
+  const all = flattenCategories(tree);
+  const trail: CategoryNode[] = [];
+  for (let cur = all.find((c) => c.id === id); cur; cur = all.find((c) => c.id === cur!.parentId)) trail.unshift(cur);
+  return trail;
+}
+
 export async function resolvePincode(pincode: string, pool: Pool = db()) {
   const { rows } = await pool.query(
     `SELECT l.id, l.name, l.slug FROM service_pincodes sp JOIN locations l ON l.id = sp.location_id WHERE sp.pincode = $1 AND sp.is_active AND l.is_active`,
@@ -217,6 +226,9 @@ export interface ProductPage extends Omit<CatalogCard, "monthlyPaise" | "firstMo
   tags: string[];
   inStock: boolean;
   protectionMonthlyPaise: Paise;
+  buyPricePaise: Paise | null;
+  deliveryTatDays: number | null;
+  installationTatDays: number | null;
   categoryId: string | null;
   plans: PlanView[];
   reviews: { id: string; name: string; rating: number; text: string; createdAt: string }[];
@@ -241,6 +253,9 @@ export async function getProductPage(slug: string, pool: Pool = db()): Promise<P
     isPopular: !!p.is_popular, features: p.features ?? [], tags: p.tags ?? [], inStock: !!p.in_stock,
     specifications: Object.fromEntries(Object.entries(spec).map(([k, v]) => [k, String(v)])),
     protectionMonthlyPaise: rupeesToPaise(p.protection_plan_price ?? 0),
+    buyPricePaise: p.buy_price ? rupeesToPaise(p.buy_price) : null,
+    deliveryTatDays: p.delivery_tat ?? null,
+    installationTatDays: p.installation_tat ?? null,
     minDurationMonths: Number(p.min_duration_months), plansCount: Number(p.plans_count), categoryId: p.category_id,
     createdAt: new Date(p.created_at).toISOString(),
     plans: plans.rows.map((r) => ({

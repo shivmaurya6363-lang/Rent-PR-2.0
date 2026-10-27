@@ -111,3 +111,12 @@ export function combineQuotes(quotes: RentalQuote[]): RentalQuote {
     totalRentalChargesPaise: sum(cycles.map((c) => c.totalPaise)),
   };
 }
+
+/**
+ * First billing instant for a start date: 09:00 IST on that day, or now when that
+ * moment has already passed. Shared so the browser preview and the server agree.
+ */
+export function billingAnchor(startDate: string, now = new Date()): Date {
+  const nineIst = new Date(`${startDate}T09:00:00+05:30`);
+  return nineIst.getTime() > now.getTime() ? nineIst : now;
+}

@@ -8,7 +8,7 @@ import { log } from "../log";
 import { getEnv } from "../env";
 import { audit } from "../billing/repo";
 import { PricingError, quoteRental, RentalQuote } from "@/lib/billing/pricing";
-import { combineQuotes, buildBillingSchedule, istDateString } from "@/lib/billing/schedule";
+import { combineQuotes, buildBillingSchedule, istDateString, billingAnchor } from "@/lib/billing/schedule";
 import { groupCartIntoAgreements } from "@/lib/billing/grouping";
 import { allocateProportionally, computeCouponDiscount, CouponError } from "@/lib/billing/coupons";
 import { rupeesToPaise } from "@/lib/billing/money";
@@ -71,12 +71,6 @@ interface PlanRow {
 
 /** IST calendar date (YYYY-MM-DD) for "now". */
 const todayIst = (now: Date) => istDateString(now);
-
-/** First billing instant for a start date: 09:00 IST on that day, or now if that is already past. */
-export function billingAnchor(startDate: string, now = new Date()): Date {
-  const nineIst = new Date(`${startDate}T09:00:00+05:30`);
-  return nineIst.getTime() > now.getTime() ? nineIst : now;
-}
 
 export async function loadSettings(q: Pool) {
   const { rows } = await q.query(`SELECT key, value FROM platform_settings WHERE key IN ('pricing','rentals')`);
@@ -339,3 +333,5 @@ async function existingResult(pool: Pool, agreementId: string, agreementNumber: 
   }
   return { agreementId, agreementNumber, provider: (pa?.provider ?? "razorpay") as ProviderId, durationMonths, startDate, payableTodayPaise: combined.payableTodayPaise, recurringPaise: combined.recurringTotalPaise, existing: true, checkout };
 }
+
+export { billingAnchor };

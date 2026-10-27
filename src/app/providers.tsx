@@ -6,9 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { LocationProvider } from "@/contexts/LocationContext";
+import { PinProvider } from "@/contexts/PinContext";
 import { CartProvider } from "@/contexts/CartContext";
-import LocationPopupWrapper from "@/components/LocationPopupWrapper";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -16,14 +15,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <LocationProvider>
+          <PinProvider>
             <CartProvider>
               <Toaster />
               <Sonner />
-              <LocationPopupWrapper />
               {children}
             </CartProvider>
-          </LocationProvider>
+          </PinProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
