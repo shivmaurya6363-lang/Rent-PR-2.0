@@ -171,6 +171,7 @@ CREATE TABLE public.payment_attempts (
   method text,
   failure_code text,
   failure_reason text,
+  provider_meta jsonb NOT NULL DEFAULT '{}'::jsonb,  -- provider references such as PhonePe debit notification ids
   captured_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
