@@ -58,7 +58,7 @@ export default function CartClient() {
                   <Link href={`/product/${l.slug}`} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-surface sm:h-24 sm:w-24"><SafeImage src={l.image} alt={l.name} sizes="96px" /></Link>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0"><Link href={`/product/${l.slug}`} className="line-clamp-2 font-semibold hover:text-primary">{l.name}</Link><p className="text-sm text-muted-foreground">{l.durationMonths} {l.durationMonths === 1 ? "month" : "months"}</p></div>
+                      <div className="min-w-0"><Link href={`/product/${l.slug}`} className="line-clamp-2 font-semibold hover:text-primary">{q?.name ?? l.name}</Link><p className="text-sm text-muted-foreground">{(q?.durationMonths ?? l.durationMonths)} {(q?.durationMonths ?? l.durationMonths) === 1 ? "month" : "months"}</p></div>
                       <button type="button" onClick={() => removeItem(i)} aria-label={`Remove ${l.name}`} className="touch-target -mr-2 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive"><Trash2 className="h-5 w-5" /></button>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-3 sm:max-w-sm">

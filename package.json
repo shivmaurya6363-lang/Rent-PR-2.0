@@ -7,11 +7,12 @@
     "dev": "next dev -p 8080",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "vitest run src/server/billing/__tests__/db.integration.test.ts"
+    "test:db": "vitest run src/server/billing/__tests__/db.integration.test.ts",
+    "db:test": "TEST_DATABASE_URL=$(./scripts/test-db.sh) vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
